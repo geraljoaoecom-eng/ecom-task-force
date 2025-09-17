@@ -1,0 +1,17 @@
+{
+  "name": "ecom-task-force",
+  "private": true,
+  "scripts": {
+    "install:all": "pnpm -r install",
+    "db:push": "pnpm --filter @etf/api prisma db push",
+    "dev": "concurrently -k \"pnpm --filter @etf/api dev\" \"pnpm --filter @etf/web dev\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "express": "^4.21.2",
+    "recharts": "^3.2.0"
+  }
+}
