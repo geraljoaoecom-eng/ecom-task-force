@@ -1,5 +1,5 @@
 // Configuração da API  
-export const API_BASE = '/api/proxy';
+export const API_BASE = '/api';
 
 // Função utilitária para chamadas à API
 export async function api(path: string, init?: RequestInit) {
