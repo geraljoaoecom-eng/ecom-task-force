@@ -15,7 +15,7 @@ import {
 } from 'lucide-react'
 import AdminGuard from '../../../components/AdminGuard'
 import { spyApi } from '@/lib/api'
-import { getSpyDeviceContext, SPY_MODE_INFO, type SpyDeviceChoice } from '@/lib/spy-device-mode'
+import { getSpyDeviceContext, isBrowserAgentChoice, SPY_MODE_INFO, type SpyDeviceChoice } from '@/lib/spy-device-mode'
 
 const STORAGE_KEY = 'ecom_spy_ipad_agent'
 const SCRIPT_VER = '1.5.2'
@@ -355,7 +355,7 @@ export default function SpyIpadAgentPage() {
           {modeInfo.note} Pesquisa na Meta com dados móveis — só Safari.
         </p>
 
-        {deviceChoice === 'mac' && (
+        {!isBrowserAgentChoice(deviceCtx.platform) && (
           <p
             style={{
               margin: '0 0 1rem',
@@ -368,7 +368,7 @@ export default function SpyIpadAgentPage() {
               lineHeight: 1.5,
             }}
           >
-            No SPY, o modo «Mac» está seleccionado. Muda para «iPad» ou «iPhone» antes de activar aqui.
+            Este dispositivo foi detectado como {deviceCtx.formLabel} · {deviceCtx.osLabel}. Abre esta página no iPad ou iPhone com Safari.
           </p>
         )}
 
