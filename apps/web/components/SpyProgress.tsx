@@ -72,6 +72,7 @@ export function SpyProgress() {
   const adsScanned = stats.adsScanned ?? 0;
   const adsRelevant = stats.adsRelevant ?? 0;
   const librariesChecked = stats.librariesChecked ?? 0;
+  const librariesSeen = live?.pagesGold ?? librariesChecked;
   const running = (primary?.status === 'running' || primary?.status === 'queued') ?? false;
   const paused = primary?.status === 'paused';
   const completed = (primary?.status === 'completed' || primary?.status === 'timeout') ?? false;
@@ -211,7 +212,8 @@ export function SpyProgress() {
               <div style={{ height: '100%', width: `${pct}%`, background: '#60a5fa', transition: 'width 0.3s' }} />
             </div>
             <div style={{ color: '#64748b', fontSize: '0.75rem', marginTop: '0.375rem' }}>
-              Keywords: {keywordsDisplay}/{keywordsQueued} · Ads: {adsScanned} · Discoveries: {discoveries}
+              Keywords: {keywordsDisplay}/{keywordsQueued} · Bibliotecas: {librariesSeen} · Discoveries: {discoveries}
+              {adsScanned > 0 && <span style={{ marginLeft: '0.25rem' }}>· Ads: {adsScanned}</span>}
               {elapsed && <span style={{ marginLeft: '0.4rem', color: '#475569' }}>· ⏱ {elapsed}</span>}
             </div>
             {(running || paused) && live?.message && (

@@ -26,7 +26,7 @@ const PHASE_LABEL: Record<string, string> = {
   keyword: 'Keyword',
   meta_collect: 'Recolha Meta',
   meta_filter: 'Filtro / memória',
-  meta_library: 'Biblioteca (proxy)',
+  meta_library: 'Biblioteca',
   enrich: 'Validação',
   done: 'Concluído',
 };
@@ -53,6 +53,7 @@ export function SpyLiveFeed({
     : null;
 
   const chips: string[] = [];
+  if (live.pagesGold != null && live.pagesGold > 0) chips.push(`${live.pagesGold} bibliotecas`);
   if (live.pagesFound != null) chips.push(`${live.pagesFound} páginas`);
   if (live.relevant != null) chips.push(`${live.relevant} relevantes`);
   if (live.libraryVisits != null && live.libraryVisitsTotal != null) {

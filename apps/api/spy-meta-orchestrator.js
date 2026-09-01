@@ -236,13 +236,13 @@ async function scrapeKeywordSearchViaMeta(searchUrl, options = {}) {
 
         if (sessionId) {
           await pushLiveStats(sessionId, {
-            phase:     'meta_library',
+            phase:     'meta_collect',
             pagesGold: streamRelevant.length,
-            message:   `${streamRelevant.length} discoveries encontrados…`,
+            message:   `${streamRelevant.length} bibliotecas no scroll…`,
           }).catch(() => {});
         }
 
-        console.log(`   ✅ Discovery: ${discovery.pageName || discovery.pageId} (${discovery.activeAds} ads)`);
+        console.log(`   📚 Biblioteca: ${discovery.pageName || discovery.pageId} (${discovery.activeAds ?? '?'} ads)`);
       }
     };
 
@@ -266,7 +266,7 @@ async function scrapeKeywordSearchViaMeta(searchUrl, options = {}) {
     const ads = mapEnrichedToSpyAds(streamRelevant, criteria.country || session.country);
     const bodyText = ads.map(a => `${a.pageName || a.pageId}: ${a.adText || ''}`.trim()).join('\n').slice(0, 5000);
 
-    console.log(`   🎯 SPY: ${phase1.rawCount} recolhidos → ${visitedPageIds.size} bibliotecas → ${streamRelevant.length} discoveries`);
+    console.log(`   🎯 SPY: ${phase1.rawCount} recolhidos → ${visitedPageIds.size} bibliotecas (scroll) → filtragem a seguir`);
 
     return {
       ads,
