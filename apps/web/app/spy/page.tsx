@@ -21,7 +21,7 @@ import SpyTrendsPanel from '../../components/SpyTrendsPanel'
 import { SpyKeywordPreviewPanel } from '@/components/SpyKeywordPreviewPanel'
 import type { SpyMarketIntelData } from '@/components/SpyMarketIntel'
 import { spyApi } from '@/lib/api'
-import { getSpyDeviceChoice, spyStartBlockedMessage } from '@/lib/spy-device-mode'
+import { getSpyDeviceChoice, isDesktopBridgeChoice, spyStartBlockedMessage } from '@/lib/spy-device-mode'
 import { useSpyJob } from '@/context/SpyJobContext'
 import {
   SpyCountryMultiField,
