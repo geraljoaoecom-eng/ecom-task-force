@@ -35,9 +35,9 @@ const {
   runAgentLoop,
 } = require(path.join(__dirname, 'spy-mobile-agent-core'));
 
-const DEVICE_LABEL = os.platform() === 'win32' ? 'Windows' : 'Mac';
+const DEVICE_LABEL = os.platform() === 'win32' ? 'Windows' : os.platform() === 'linux' ? 'Linux' : 'Mac';
 const DEVICE = `${os.hostname()} (${DEVICE_LABEL})`;
-const AGENT_PLATFORM = os.platform() === 'win32' ? 'windows' : 'mac';
+const AGENT_PLATFORM = os.platform() === 'win32' ? 'windows' : os.platform() === 'linux' ? 'linux' : 'mac';
 const SYNC_MS = parseInt(process.env.SPY_MOBILE_VPS_SYNC_MS || '30000', 10) || 30000;
 const { ensureMobileBoundProxy } = require('./spy-mobile-bound-proxy');
 let mobilePathMode = 'hotspot';

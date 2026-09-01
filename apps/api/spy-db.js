@@ -113,6 +113,7 @@ async function createSpySession(userId, params) {
   if (
     mobilePlatform === 'mac' ||
     mobilePlatform === 'windows' ||
+    mobilePlatform === 'linux' ||
     mobilePlatform === 'ipad' ||
     mobilePlatform === 'iphone'
   ) {

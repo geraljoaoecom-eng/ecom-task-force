@@ -590,8 +590,30 @@ async function ensureSpyScraperReady(session = null) {
         };
       }
       const st = getBridgeStatus();
-      const agent = (st.agents || []).find((a) => !plat || String(a.platform).toLowerCase() === plat) || st.agents[0];
-      console.log(`✅ SPY Meta — ponte móvel (${agent?.isp || agent?.ip || plat || 'agent'})`);
+      const agent =
+        (st.agents || []).find(
+          (a) => a.mobileValidated && (!plat || String(a.platform).toLowerCase() === plat)
+        ) || (st.agents || []).find((a) => a.mobileValidated);
+      if (!agent) {
+        const label =
+          plat === 'iphone'
+            ? 'iPhone'
+            : plat === 'ipad'
+              ? 'iPad'
+              : plat === 'windows'
+                ? 'Windows'
+                : plat === 'linux'
+                  ? 'Linux'
+                  : 'Mac';
+        return {
+          ok: false,
+          message:
+            plat === 'iphone' || plat === 'ipad'
+              ? `SPY ${label}: liga dados móveis, toca Activar e mantém o /spy aberto.`
+              : `SPY ${label}: liga dados móveis (hotspot/USB), activa a ponte local e aguarda validação 4G/5G.`,
+        };
+      }
+      console.log(`✅ SPY Meta — ponte móvel validada (${agent?.isp || agent?.ip || plat || 'agent'})`);
       return { ok: true, mode: 'mobile', proxy: agent?.ip || 'mobile' };
     }
     if (isMetaScraperConfigured()) {

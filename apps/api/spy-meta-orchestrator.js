@@ -162,7 +162,9 @@ async function collectKeywordAds(searchUrl, options, collectCap, scrollToEnd) {
               ? 'Mac'
               : plat === 'windows'
                 ? 'Windows'
-                : 'móvel';
+                : plat === 'linux'
+                  ? 'Linux'
+                  : 'móvel';
       throw new Error(`Agente ${label} offline — toca Activar e mantém o /spy aberto`);
     }
   }

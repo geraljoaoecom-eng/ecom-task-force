@@ -15,7 +15,7 @@ import {
 } from 'lucide-react'
 import AdminGuard from '../../../components/AdminGuard'
 import { spyApi } from '@/lib/api'
-import { getSpyDeviceChoice, SPY_MODE_INFO, type SpyDeviceChoice } from '@/lib/spy-device-mode'
+import { getSpyDeviceContext, SPY_MODE_INFO, type SpyDeviceChoice } from '@/lib/spy-device-mode'
 
 const STORAGE_KEY = 'ecom_spy_ipad_agent'
 const SCRIPT_VER = '1.5.2'
@@ -104,11 +104,9 @@ async function sendHeartbeat(creds: StoredCreds, platform: 'ipad' | 'iphone') {
 }
 
 export default function SpyIpadAgentPage() {
-  const [deviceChoice] = useState<SpyDeviceChoice>(() =>
-    typeof window !== 'undefined' ? getSpyDeviceChoice() : 'ipad'
-  )
-  const browserPlatform: 'ipad' | 'iphone' = deviceChoice === 'iphone' ? 'iphone' : 'ipad'
-  const deviceLabel = browserPlatform === 'iphone' ? 'iPhone' : 'iPad'
+  const deviceCtx = getSpyDeviceContext()
+  const browserPlatform: 'ipad' | 'iphone' = deviceCtx.platform === 'iphone' ? 'iphone' : 'ipad'
+  const deviceLabel = deviceCtx.formLabel === 'Mobile' ? 'iPhone' : 'iPad'
   const modeInfo = SPY_MODE_INFO[browserPlatform]
 
   const [phase, setPhase] = useState<Phase>('idle')

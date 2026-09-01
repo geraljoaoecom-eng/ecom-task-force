@@ -229,7 +229,7 @@ export const spyApi = {
     minDaysActive?: string;
     maxDaysActive?: string;
     maxHours?: string;
-    mobilePlatform?: 'mac' | 'windows' | 'ipad' | 'iphone';
+    mobilePlatform?: 'mac' | 'windows' | 'linux' | 'ipad' | 'iphone';
   }) =>
     api('/spy/sessions', {
       method: 'POST',
@@ -324,7 +324,7 @@ export const spyApi = {
       activateCommandWindows?: string
       activateCommandWindowsCmd?: string
     }>,
-  getMobileTerminal: (platform: 'mac' | 'windows' = 'mac') =>
+  getMobileTerminal: (platform: 'mac' | 'windows' | 'linux' = 'mac') =>
     api(`/spy/mobile/terminal?platform=${encodeURIComponent(platform)}`) as Promise<{
       platform?: string
       projectDir: string

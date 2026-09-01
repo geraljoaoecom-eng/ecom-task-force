@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Loader2, Smartphone, Signal, WifiOff, RefreshCw, Zap, CheckCircle2, XCircle, Copy, Check } from 'lucide-react'
 import { spyApi, api } from '@/lib/api'
-import { getSpyDeviceChoice, setSpyDeviceChoice, SPY_DEVICE_CHOICES, SPY_MODE_INFO, spyStartBlockedMessage, agentMatchesChoice, isBrowserAgentChoice, isDesktopBridgeChoice, choiceMatchesCurrentDevice, type SpyDeviceChoice } from '@/lib/spy-device-mode'
+import { getSpyDeviceChoice, getSpyDeviceContext, SPY_MODE_INFO, spyStartBlockedMessage, agentMatchesChoice, isBrowserAgentChoice, isDesktopBridgeChoice, type SpyDeviceChoice } from '@/lib/spy-device-mode'
 
 type StoredIpadCreds = {
   agentId: string
@@ -173,9 +173,8 @@ export default function SpyMobileBridge({ bridge, onRefresh, onNetworkStatus, on
   const [bookmarkCopied, setBookmarkCopied] = useState(false)
   const [showBookmarkHelp, setShowBookmarkHelp] = useState(false)
   const [bookmarkBundle, setBookmarkBundle] = useState<string | null>(null)
-  const [deviceChoice, setDeviceChoice] = useState<SpyDeviceChoice>(() =>
-    typeof window !== 'undefined' ? getSpyDeviceChoice() : 'mac'
-  )
+  const deviceCtx = getSpyDeviceContext()
+  const deviceChoice = deviceCtx.platform
   const runnerStartedRef = useRef(false)
 
   useEffect(() => {
@@ -214,7 +213,7 @@ export default function SpyMobileBridge({ bridge, onRefresh, onNetworkStatus, on
       const browserMobile = !!data.mobile
       setStatus(browserMobile ? 'mobile' : 'wifi')
       setInfo(data.reason || data.isp || data.org || data.asn || '')
-      onNetworkStatus?.(browserMobile || agentMobileOk)
+      onNetworkStatus?.(agentMobileOk)
     } catch {
       setStatus('error')
     } finally {
@@ -257,24 +256,13 @@ export default function SpyMobileBridge({ bridge, onRefresh, onNetworkStatus, on
       platformAgents = []
     }
 
-    const desktopAgentLive = platformAgents.some(
-      (a) =>
-        (agentMatchesChoice(a, 'mac') || agentMatchesChoice(a, 'windows')) &&
-        a.mobileValidated
-    )
-    // iPhone/iPad: só «ligado» se o runner está a fazer claim (poll activo)
-    const browserAgentLive = platformAgents.some(
-      (a) => agentMatchesChoice(a, choice) && a.claimFresh === true
-    )
+    const validated = platformAgents.filter((a) => a.mobileValidated)
 
     let connected = false
     if (isDesktopBridgeChoice(choice)) {
-      connected =
-        localRunning ||
-        platformAgents.some((a) => agentMatchesChoice(a, choice) && a.mobileValidated) ||
-        (choice === 'mac' && desktopAgentLive)
+      connected = localRunning && validated.some((a) => agentMatchesChoice(a, choice))
     } else if (isBrowserAgentChoice(choice)) {
-      if (browserAgentLive && !runnerStartedRef.current) {
+      if (validated.some((a) => a.claimFresh) && !runnerStartedRef.current) {
         const stored = loadIpadStoredCreds()
         if (stored && (stored.platform === choice || !stored.platform)) {
           try {
@@ -286,7 +274,7 @@ export default function SpyMobileBridge({ bridge, onRefresh, onNetworkStatus, on
       }
       if (!runnerStartedRef.current) {
         const stored = loadIpadStoredCreds()
-        if (stored && choiceMatchesCurrentDevice(choice) && (stored.platform === choice || !stored.platform)) {
+        if (stored && (stored.platform === choice || !stored.platform)) {
           try {
             await startInlineRunner({ ...stored, platform: choice })
             await sendIpadHeartbeat({ ...stored, platform: choice })
@@ -295,7 +283,9 @@ export default function SpyMobileBridge({ bridge, onRefresh, onNetworkStatus, on
           }
         }
       }
-      connected = browserAgentLive || (runnerStartedRef.current && choiceMatchesCurrentDevice(choice))
+      connected =
+        validated.some((a) => a.claimFresh === true) ||
+        (runnerStartedRef.current && validated.length > 0)
     }
 
     setAgentStatus(connected ? 'connected' : 'offline')
@@ -304,18 +294,6 @@ export default function SpyMobileBridge({ bridge, onRefresh, onNetworkStatus, on
     if (connected) setTerminalCmd('')
     return connected
   }, [onAgentMobile, startInlineRunner])
-
-  const pickDevice = useCallback((choice: SpyDeviceChoice) => {
-    setSpyDeviceChoice(choice)
-    setDeviceChoice(choice)
-    setAgentHint('')
-    window.EcomSpyAgentRunner?.stop()
-    runnerStartedRef.current = false
-    setRunnerOn(false)
-    setMetaJobUrl(null)
-    checkAgent()
-    onRefresh()
-  }, [checkAgent, onRefresh])
 
   const loadTerminalHelp = useCallback(async () => {
     try {
@@ -459,26 +437,11 @@ export default function SpyMobileBridge({ bridge, onRefresh, onNetworkStatus, on
       const choice = getSpyDeviceChoice()
 
       if (isBrowserAgentChoice(choice)) {
-        if (!choiceMatchesCurrentDevice(choice)) {
-          setAgentHint(
-            `Modo ${choice === 'iphone' ? 'iPhone' : 'iPad'} — abre o Safari nesse aparelho (dados móveis), escolhe o mesmo modo e toca Activar.`
-          )
-          return
-        }
         await activateBrowserAgent(choice)
         return
       }
 
       const hasLocalBridge = await localBridgeHealth()
-
-      if (isDesktopBridgeChoice(choice) && !hasLocalBridge && !choiceMatchesCurrentDevice(choice)) {
-        setAgentHint(
-          choice === 'windows'
-            ? 'Modo Windows — abre o SPY no PC Windows (ligado ao hotspot) e clica Activar.'
-            : 'Modo Mac seleccionado — abre o SPY no Mac e clica Activar (ponte local).'
-        )
-        return
-      }
 
       if (await tryLocalReconnect()) {
         setAgentHint('A religar agente local…')
@@ -615,54 +578,31 @@ export default function SpyMobileBridge({ bridge, onRefresh, onNetworkStatus, on
   const required = bridge?.required !== false
   if (!required) return null
 
-  const networkOk = status === 'mobile' || (isDesktopBridgeChoice(deviceChoice) && agentMobileOk)
+  const networkOk = agentMobileOk
   const netColor = networkOk ? '#34d399' : status === 'checking' ? '#94a3b8' : '#f87171'
   const netBg = networkOk ? 'rgba(16,185,129,0.07)' : status === 'checking' ? 'rgba(148,163,184,0.05)' : 'rgba(239,68,68,0.08)'
   const netBorder = networkOk ? 'rgba(16,185,129,0.3)' : status === 'checking' ? 'rgba(148,163,184,0.2)' : 'rgba(239,68,68,0.35)'
 
   const modeInfo = SPY_MODE_INFO[deviceChoice]
-  const modeTitle =
-    deviceChoice === 'mac'
-      ? 'Modo Mac'
-      : deviceChoice === 'windows'
-        ? 'Modo Windows'
-        : deviceChoice === 'ipad'
-          ? 'Modo iPad'
-          : 'Modo iPhone'
 
-  const netLabel =
-    agentMobileOk && status !== 'mobile'
-      ? `Agente móvel OK${info ? ` · ${info}` : ''} — ${modeTitle}`
-      : status === 'mobile'
-        ? `Dados móveis${info ? ` · ${info}` : ''} — toca Activar abaixo`
-        : status === 'wifi'
-          ? `${isBrowserAgentChoice(deviceChoice) ? 'Wi-Fi no telemóvel/tablet' : 'Wi-Fi / fibra'}${info ? ` · ${info}` : ''} — ${
-              deviceChoice === 'mac'
-                ? 'iPhone USB ao Mac'
-                : deviceChoice === 'windows'
-                  ? 'liga o PC ao hotspot do telemóvel'
-                  : 'usa dados móveis'
-            }`
-          : status === 'error'
-            ? 'Não foi possível verificar a ligação'
-            : 'A verificar…'
+  const netLabel = agentMobileOk
+    ? `Dados móveis OK${info ? ` · ${info}` : ''}`
+    : status === 'mobile'
+      ? `Rede móvel detectada${info ? ` · ${info}` : ''} — activa o agente`
+      : status === 'wifi'
+        ? `Wi‑Fi / fibra${info ? ` · ${info}` : ''} — liga 4G/5G para pesquisar`
+        : status === 'error'
+          ? 'Não foi possível verificar a ligação'
+          : 'A verificar rede…'
 
   const agentLabel =
     agentStatus === 'connected'
-      ? deviceChoice === 'mac'
-        ? 'Agente Mac ligado — podes pesquisar'
-        : deviceChoice === 'windows'
-          ? 'Agente Windows ligado — podes pesquisar'
-          : deviceChoice === 'iphone'
-            ? 'Agente iPhone ligado — mantém este ecrã aberto'
-            : 'Agente iPad ligado — mantém este ecrã aberto'
+      ? `Agente pronto (${deviceCtx.formLabel} · ${deviceCtx.osLabel}) — podes pesquisar`
       : agentStatus === 'checking'
         ? 'A verificar agente…'
-        : deviceChoice === 'mac'
-          ? 'Toca Activar (Mac)'
-          : deviceChoice === 'windows'
-            ? 'Toca Activar (Windows + hotspot)'
-            : 'Toca Activar (dados móveis)'
+        : isDesktopBridgeChoice(deviceChoice)
+          ? 'Toca Activar (ponte local + dados móveis)'
+          : 'Toca Activar (dados móveis)'
 
   const agentColor = agentStatus === 'connected' ? '#34d399' : agentStatus === 'checking' ? '#94a3b8' : '#f87171'
   const agentBorder = agentStatus === 'connected' ? 'rgba(16,185,129,0.3)' : agentStatus === 'checking' ? 'rgba(148,163,184,0.2)' : 'rgba(239,68,68,0.35)'
@@ -731,40 +671,12 @@ export default function SpyMobileBridge({ bridge, onRefresh, onNetworkStatus, on
         </div>
       )}
 
-      <div style={{ background: 'rgba(148,163,184,0.05)', border: '1px solid rgba(148,163,184,0.18)', borderRadius: '0.625rem', padding: '0.55rem 0.65rem' }}>
-        <p style={{ margin: '0 0 0.45rem', fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600 }}>
-          Dispositivo para esta pesquisa
+      <div style={{ background: 'rgba(148,163,184,0.05)', border: '1px solid rgba(148,163,184,0.18)', borderRadius: '0.625rem', padding: '0.55rem 0.75rem' }}>
+        <p style={{ margin: 0, fontSize: '0.78rem', color: '#E8EDF2', fontWeight: 600 }}>
+          {deviceCtx.formLabel} · {deviceCtx.osLabel}
         </p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.35rem' }}>
-          {SPY_DEVICE_CHOICES.map((opt) => {
-            const active = deviceChoice === opt.id
-            return (
-              <button
-                key={opt.id}
-                type="button"
-                onClick={() => pickDevice(opt.id)}
-                style={{
-                  padding: '0.45rem 0.35rem',
-                  borderRadius: '0.45rem',
-                  border: active ? '1px solid rgba(245,210,108,0.45)' : '1px solid rgba(148,163,184,0.2)',
-                  background: active ? 'rgba(245,210,108,0.12)' : 'transparent',
-                  color: active ? '#F5D26C' : '#cbd5e1',
-                  fontSize: '0.72rem',
-                  fontWeight: active ? 700 : 500,
-                  cursor: 'pointer',
-                  lineHeight: 1.35,
-                }}
-              >
-                {opt.label}
-              </button>
-            )
-          })}
-        </div>
-        <p style={{ margin: '0.4rem 0 0', fontSize: '0.68rem', color: '#64748b', lineHeight: 1.45 }}>
-          {SPY_DEVICE_CHOICES.find((o) => o.id === deviceChoice)?.short}
-          {!choiceMatchesCurrentDevice(deviceChoice) && (
-            <span style={{ color: '#fcd34d' }}> — abre o SPY no dispositivo seleccionado.</span>
-          )}
+        <p style={{ margin: '0.25rem 0 0', fontSize: '0.68rem', color: '#64748b', lineHeight: 1.45 }}>
+          Detectado automaticamente. Pesquisas SPY exigem <strong style={{ color: '#94a3b8' }}>dados móveis (4G/5G)</strong> — sem proxy nem IP da VPS.
         </p>
       </div>
 

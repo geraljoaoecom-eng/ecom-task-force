@@ -54,7 +54,7 @@ interface SpyJobContextValue {
     marketIntel?: Record<string, unknown>;
     consultantBrief?: string;
     ctaHunt?: string[];
-    mobilePlatform?: 'mac' | 'windows' | 'ipad' | 'iphone';
+    mobilePlatform?: 'mac' | 'windows' | 'linux' | 'ipad' | 'iphone';
   }) => Promise<SpySessionLive | null>;
   refreshSessions: () => Promise<void>;
   notifications: SpyNotification[];

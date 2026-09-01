@@ -291,7 +291,7 @@ export default function SpyPage() {
   useEffect(() => {
     // Só faz sentido em Mac/Windows — no iPhone/iPad o probe localhost só gasta bateria/rede
     const choice = getSpyDeviceChoice()
-    if (choice !== 'mac' && choice !== 'windows') {
+    if (!isDesktopBridgeChoice(choice)) {
       setLocalBridgeOk(false)
       return undefined
     }

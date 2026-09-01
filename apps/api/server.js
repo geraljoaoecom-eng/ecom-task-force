@@ -737,6 +737,12 @@ function getSpyWindowsProjectDir() {
   return raw || DEFAULT;
 }
 
+function getSpyLinuxProjectDir() {
+  const DEFAULT = process.env.HOME ? `${process.env.HOME}/EcoomTaskForce` : '~/EcoomTaskForce';
+  const raw = process.env.SPY_LINUX_PROJECT_DIR?.trim().replace(/^["']|["']$/g, '') || '';
+  return raw || DEFAULT;
+}
+
 function buildSpyTerminalCommand({ pairingToken, apiUrl } = {}) {
   const dir = getSpyMacProjectDir().replace(/"/g, '\\"');
   if (pairingToken && apiUrl) {
@@ -767,6 +773,14 @@ function buildSpyWindowsPowerShell({ pairingToken, apiUrl } = {}) {
   );
 }
 
+function buildSpyLinuxCommand({ pairingToken, apiUrl } = {}) {
+  const dir = getSpyLinuxProjectDir().replace(/"/g, '\\"');
+  if (pairingToken && apiUrl) {
+    return `cd "${dir}" && node scripts/spy-mobile-bridge-local.js --pairing=${pairingToken} --api=${apiUrl}`;
+  }
+  return `cd "${dir}" && node scripts/spy-mobile-bridge-local.js`;
+}
+
 app.get('/api/spy/mobile/status', authenticateToken, isAdmin, (req, res) => {
   const { getBridgeStatus } = require('./spy-mobile-bridge');
   res.json(getBridgeStatus());
@@ -785,6 +799,16 @@ app.get('/api/spy/mobile/terminal', authenticateToken, isAdmin, (req, res) => {
         'No Windows: liga o PC ao hotspot do telemóvel → abre PowerShell → cola o comando. Deixa a janela aberta (localhost:9780).',
     });
   }
+  if (platform === 'linux') {
+    const projectDir = getSpyLinuxProjectDir();
+    return res.json({
+      platform: 'linux',
+      projectDir,
+      resumeCommand: buildSpyLinuxCommand(),
+      hint:
+        'No Linux: liga o PC ao hotspot → cola no terminal. Deixa a janela aberta (localhost:9780).',
+    });
+  }
   const projectDir = getSpyMacProjectDir();
   res.json({
     platform: 'mac',
@@ -800,7 +824,7 @@ app.get('/api/spy/mobile/agent-ready', authenticateToken, (req, res) => {
   const s = getBridgeStatus();
   const mobileValidated = s.agents.some((a) => a.mobileValidated);
   res.json({
-    ready: s.ready,
+    ready: s.ready && mobileValidated,
     mobileValidated,
     agentCount: s.agentCount,
     message: s.message,

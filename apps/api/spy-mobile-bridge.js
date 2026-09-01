@@ -49,7 +49,7 @@ hydrateAgentsFromDisk();
 
 function inferPlatformFromPayload(payload = {}) {
   const explicit = String(payload.platform || '').toLowerCase();
-  if (explicit === 'ipad' || explicit === 'iphone' || explicit === 'mac' || explicit === 'windows') {
+  if (explicit === 'ipad' || explicit === 'iphone' || explicit === 'mac' || explicit === 'windows' || explicit === 'linux') {
     return explicit;
   }
   if (explicit === 'win32' || explicit === 'win') return 'windows';
@@ -57,6 +57,7 @@ function inferPlatformFromPayload(payload = {}) {
   if (/iPad/i.test(name)) return 'ipad';
   if (/iPhone/i.test(name)) return 'iphone';
   if (/Win/i.test(name)) return 'windows';
+  if (/Linux/i.test(name)) return 'linux';
   if (/Mac/i.test(name)) return 'mac';
   return 'mac';
 }
@@ -118,13 +119,14 @@ function listLiveAgents() {
 function normalizeAgentPlatform(agent) {
   const platform = String(agent?.platform || '').toLowerCase();
   const name = String(agent?.deviceName || '');
-  if (platform === 'ipad' || platform === 'iphone' || platform === 'mac' || platform === 'windows') {
+  if (platform === 'ipad' || platform === 'iphone' || platform === 'mac' || platform === 'windows' || platform === 'linux') {
     return platform;
   }
   if (platform === 'win32' || platform === 'win') return 'windows';
   if (/iPad/i.test(name)) return 'ipad';
   if (/iPhone/i.test(name)) return 'iphone';
   if (/Win/i.test(name)) return 'windows';
+  if (/Linux/i.test(name)) return 'linux';
   if (/Mac/i.test(name)) return 'mac';
   return 'mac';
 }
@@ -144,6 +146,7 @@ function agentClaimScore(agent, targetPlatform = null) {
   if (agent.mobileValidated) score += 80;
   if (platform === 'mac' && /Mac/i.test(name) && !agent.mobileValidated) score -= 200;
   if (platform === 'windows' && !agent.mobileValidated) score -= 200;
+  if (platform === 'linux' && !agent.mobileValidated) score -= 200;
   return score;
 }
 
@@ -158,7 +161,7 @@ function pickPreferredClaimAgent(liveAgents, targetPlatform = null) {
 
 function isBridgeReady() {
   if (!isMobileBridgeRequired()) return true;
-  return listLiveAgents().length > 0;
+  return listLiveAgents().some((a) => a.mobileValidated);
 }
 
 function hasFreshClaim(agent) {
@@ -170,10 +173,11 @@ function isBridgeReadyForPlatform(platform) {
   if (!isMobileBridgeRequired()) return true;
   if (!platform) return isBridgeReady();
   const target = String(platform).toLowerCase();
-  const live = listLiveAgents().filter((a) => agentPlatformMatches(a, target));
+  const live = listLiveAgents().filter(
+    (a) => agentPlatformMatches(a, target) && a.mobileValidated
+  );
   if (!live.length) return false;
   if (target === 'iphone' || target === 'ipad') {
-    // Browser agent só está realmente pronto se /jobs/claim está a correr (runner aberto).
     return live.some((a) => hasFreshClaim(a));
   }
   return true;
@@ -181,10 +185,13 @@ function isBridgeReadyForPlatform(platform) {
 
 function getBridgeStatus() {
   const live = listLiveAgents();
+  const validated = live.filter((a) => a.mobileValidated);
   return {
     required: isMobileBridgeRequired(),
-    ready: live.length > 0,
+    ready: validated.length > 0,
+    mobileValidated: validated.length > 0,
     agentCount: live.length,
+    validatedCount: validated.length,
     agents: live.map((a) => ({
       id: a.id,
       deviceName: a.deviceName,
@@ -197,11 +204,13 @@ function getBridgeStatus() {
       lastClaimAt: a.lastClaimAt || 0,
     })),
     message:
-      live.length > 0
-        ? `${live[0].deviceName || 'Mac'} — ${live[0].isp || live[0].ip || 'MEO'}`
-        : isMobileBridgeRequired()
-          ? 'Liga o iPhone por USB e clica «Activar ponte móvel» abaixo'
-          : 'Ponte móvel opcional (desactivada)',
+      validated.length > 0
+        ? `${validated[0].deviceName || 'Agente'} — ${validated[0].isp || validated[0].ip || 'dados móveis'}`
+        : live.length > 0
+          ? 'Agente ligado mas sem dados móveis — liga 4G/5G e Activar de novo'
+          : isMobileBridgeRequired()
+            ? 'Liga dados móveis, corre a ponte local e clica Activar'
+            : 'Ponte móvel opcional (desactivada)',
   };
 }
 

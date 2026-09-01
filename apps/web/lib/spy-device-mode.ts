@@ -1,73 +1,85 @@
-/** Dispositivo escolhido pelo utilizador para correr o SPY móvel. */
-export type SpyDeviceChoice = 'mac' | 'windows' | 'ipad' | 'iphone'
+/** Plataforma do agente SPY (auto-detectada). */
+export type SpyDeviceChoice = 'mac' | 'windows' | 'linux' | 'ipad' | 'iphone'
 
-const STORAGE_KEY = 'ecom_spy_device_choice'
+export type SpyDeviceForm = 'desktop' | 'tablet' | 'mobile'
+export type SpyDeviceOs = 'macos' | 'windows' | 'ios' | 'linux' | 'other'
 
-export function getSpyDeviceChoice(): SpyDeviceChoice {
-  if (typeof window === 'undefined') return 'mac'
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw === 'mac' || raw === 'windows' || raw === 'ipad' || raw === 'iphone') return raw
-  } catch {
-    // ignore
-  }
-  return inferDefaultChoice()
+export interface SpyDeviceContext {
+  platform: SpyDeviceChoice
+  form: SpyDeviceForm
+  os: SpyDeviceOs
+  formLabel: string
+  osLabel: string
 }
 
-export function setSpyDeviceChoice(choice: SpyDeviceChoice) {
-  localStorage.setItem(STORAGE_KEY, choice)
-}
-
-/** @deprecated use getSpyDeviceChoice */
-export type SpyDeviceMode = SpyDeviceChoice
-
-/** @deprecated use getSpyDeviceChoice */
-export function getSpyDeviceMode(): SpyDeviceChoice {
-  return getSpyDeviceChoice()
-}
-
-function inferDefaultChoice(): SpyDeviceChoice {
+function detectHardwarePlatform(): SpyDeviceChoice | 'other' {
   if (typeof navigator === 'undefined') return 'mac'
   const ua = navigator.userAgent
   if (/iPad/i.test(ua) || (navigator.maxTouchPoints > 1 && /Macintosh/i.test(ua))) return 'ipad'
   if (/iPhone|iPod/i.test(ua)) return 'iphone'
   if (/Windows/i.test(ua)) return 'windows'
-  return 'mac'
+  if (/Macintosh|Mac OS X/i.test(ua)) return 'mac'
+  if (/Linux/i.test(ua) && !/Android/i.test(ua)) return 'linux'
+  return 'other'
 }
 
-/** Mac ou Windows — agente Node local (Playwright), não favorito Safari. */
+function platformToContext(platform: SpyDeviceChoice): SpyDeviceContext {
+  switch (platform) {
+    case 'iphone':
+      return { platform, form: 'mobile', os: 'ios', formLabel: 'Mobile', osLabel: 'iOS' }
+    case 'ipad':
+      return { platform, form: 'tablet', os: 'ios', formLabel: 'Tablet', osLabel: 'iOS' }
+    case 'windows':
+      return { platform, form: 'desktop', os: 'windows', formLabel: 'Desktop', osLabel: 'Windows' }
+    case 'linux':
+      return { platform, form: 'desktop', os: 'linux', formLabel: 'Desktop', osLabel: 'Linux' }
+    default:
+      return { platform: 'mac', form: 'desktop', os: 'macos', formLabel: 'Desktop', osLabel: 'macOS' }
+  }
+}
+
+/** Detecta automaticamente dispositivo + OS (sem escolha manual). */
+export function getSpyDeviceContext(): SpyDeviceContext {
+  const hw = detectHardwarePlatform()
+  if (hw === 'other') return platformToContext('mac')
+  return platformToContext(hw)
+}
+
+/** Plataforma do agente para API/jobs. */
+export function getSpyDeviceChoice(): SpyDeviceChoice {
+  return getSpyDeviceContext().platform
+}
+
+/** @deprecated escolha manual removida — mantido por compatibilidade */
+export function setSpyDeviceChoice(_choice: SpyDeviceChoice) {
+  // noop — detecção automática
+}
+
+export type SpyDeviceMode = SpyDeviceChoice
+
+export function getSpyDeviceMode(): SpyDeviceChoice {
+  return getSpyDeviceChoice()
+}
+
 export function isDesktopBridgeChoice(choice: SpyDeviceChoice = getSpyDeviceChoice()): boolean {
-  return choice === 'mac' || choice === 'windows'
+  return choice === 'mac' || choice === 'windows' || choice === 'linux'
 }
 
 export function isBrowserAgentChoice(choice: SpyDeviceChoice = getSpyDeviceChoice()): boolean {
   return choice === 'ipad' || choice === 'iphone'
 }
 
-/** Detecta hardware actual (não a escolha do utilizador). */
-export function detectCurrentHardware(): 'mac' | 'windows' | 'ipad' | 'iphone' | 'other' {
-  if (typeof navigator === 'undefined') return 'other'
-  const ua = navigator.userAgent
-  if (/iPad/i.test(ua) || (navigator.maxTouchPoints > 1 && /Macintosh/i.test(ua))) return 'ipad'
-  if (/iPhone|iPod/i.test(ua)) return 'iphone'
-  if (/Windows/i.test(ua)) return 'windows'
-  if (/Macintosh|Mac OS X/i.test(ua)) return 'mac'
-  return 'other'
+export function detectCurrentHardware(): SpyDeviceChoice | 'other' {
+  return detectHardwarePlatform()
 }
 
-export function choiceMatchesCurrentDevice(choice: SpyDeviceChoice = getSpyDeviceChoice()): boolean {
-  const hw = detectCurrentHardware()
-  if (choice === 'mac') return hw === 'mac'
-  if (choice === 'windows') return hw === 'windows'
-  if (choice === 'ipad') return hw === 'ipad'
-  if (choice === 'iphone') return hw === 'iphone'
-  return false
+export function choiceMatchesCurrentDevice(_choice?: SpyDeviceChoice): boolean {
+  return true
 }
 
-/** @deprecated */
 export function isSpyTabletDevice(): boolean {
-  const hw = detectCurrentHardware()
-  return hw === 'ipad' || hw === 'iphone'
+  const { form } = getSpyDeviceContext()
+  return form === 'tablet' || form === 'mobile'
 }
 
 export function agentMatchesChoice(
@@ -81,65 +93,59 @@ export function agentMatchesChoice(
   if (choice === 'iphone' && (/iPhone/i.test(name) || platform === 'iphone')) return true
   if (choice === 'mac' && (/Mac/i.test(name) || platform === 'mac')) return true
   if (choice === 'windows' && (/Win/i.test(name) || platform === 'windows' || platform === 'win32')) return true
+  if (choice === 'linux' && (platform === 'linux' || /Linux/i.test(name))) return true
   return false
 }
 
-export const SPY_DEVICE_CHOICES: { id: SpyDeviceChoice; label: string; short: string }[] = [
-  { id: 'mac', label: 'Mac', short: 'Ponte local + scroll automático' },
-  { id: 'windows', label: 'Windows', short: 'PC + hotspot / dados móveis' },
-  { id: 'ipad', label: 'iPad', short: 'Activar + favorito SPY Meta' },
-  { id: 'iphone', label: 'iPhone', short: 'Activar + favorito SPY Meta' },
-]
-
 export const SPY_MODE_INFO = {
   mac: {
-    title: 'Modo Mac',
-    activate: 'Activar → ponte local (Wi-Fi + iPhone USB ou hotspot)',
-    note: 'O scroll na Meta corre no Mac. iPad/iPhone podem ficar desligados.',
+    title: 'Desktop · macOS',
+    activate: 'Liga dados móveis (hotspot/USB) → Activar ponte local',
+    note: 'O scroll na Meta corre neste Mac com IP 4G/5G. Wi‑Fi fixa bloqueia a pesquisa.',
   },
   windows: {
-    title: 'Modo Windows',
-    activate: 'Liga o PC ao hotspot do telemóvel → PowerShell → Activar',
-    note: 'O Windows tem de sair pelo IP dos dados móveis (hotspot/USB tether). Sem Wi‑Fi fixa.',
+    title: 'Desktop · Windows',
+    activate: 'Hotspot/USB tether → PowerShell → Activar',
+    note: 'O PC tem de sair pelos dados móveis. Sem Wi‑Fi fixa.',
+  },
+  linux: {
+    title: 'Desktop · Linux',
+    activate: 'Hotspot/USB tether → terminal → Activar ponte local',
+    note: 'O scroll corre neste PC com IP 4G/5G.',
   },
   ipad: {
-    title: 'Modo iPad',
-    activate: 'Activar (dados móveis) → Abrir Meta → favorito «SPY Meta»',
-    note: 'IP do iPad (dados móveis). O favorito injecta o scroll na Meta — cria-o 1×.',
+    title: 'Tablet · iOS',
+    activate: 'Dados móveis → Activar → favorito «SPY Meta»',
+    note: 'Safari no iPad com 4G/5G. Mantém este ecrã aberto.',
   },
   iphone: {
-    title: 'Modo iPhone',
-    activate: 'Activar (dados móveis) → Abrir Meta → favorito «SPY Meta»',
-    note: 'IP do iPhone (dados móveis). O favorito injecta o scroll na Meta — cria-o 1×.',
+    title: 'Mobile · iOS',
+    activate: 'Dados móveis → Activar → favorito «SPY Meta»',
+    note: 'Safari no iPhone com 4G/5G. Mantém este ecrã aberto.',
   },
 } as const
 
 export function spyStartBlockedMessage(choice: SpyDeviceChoice = getSpyDeviceChoice()): string {
-  if (choice === 'ipad' || choice === 'iphone') {
-    const label = choice === 'iphone' ? 'iPhone' : 'iPad'
+  const ctx = platformToContext(choice)
+  const mode = SPY_MODE_INFO[choice]
+
+  if (isBrowserAgentChoice(choice)) {
     return (
-      `🚫 SPY BLOQUEADO (${label})\n\n` +
-      `1. Modo «${label}» + dados móveis\n` +
+      `🚫 SPY bloqueado — ${ctx.formLabel} · ${ctx.osLabel}\n\n` +
+      '1. Liga dados móveis (desliga Wi‑Fi)\n' +
       '2. Toca Activar e mantém este ecrã aberto\n' +
-      '3. Favorito «SPY Meta» criado no Safari (1×)'
+      '3. Favorito «SPY Meta» no Safari (1×)'
     )
   }
-  if (choice === 'windows') {
-    return (
-      '🚫 SPY BLOQUEADO (Windows)\n\n' +
-      '1. Modo «Windows» seleccionado\n' +
-      '2. PC ligado ao hotspot / USB tether do telemóvel (dados móveis)\n' +
-      '3. PowerShell: corre a ponte local e clica Activar'
-    )
-  }
+
   return (
-    '🚫 SPY BLOQUEADO (Mac)\n\n' +
-    '1. Modo «Mac» seleccionado\n' +
-    '2. iPhone USB ao Mac ou hotspot (dados móveis)\n' +
-    '3. Clica Activar no SPY (ponte local)'
+    `🚫 SPY bloqueado — ${mode.title}\n\n` +
+    '1. Liga o dispositivo aos dados móveis (hotspot ou USB tether)\n' +
+    '2. Corre a ponte local e toca Activar\n' +
+    '3. Aguarda «Dados móveis OK» antes de pesquisar'
   )
 }
 
-export function mobileAgentPagePath(_choice?: SpyDeviceChoice): string {
+export function mobileAgentPagePath(): string {
   return '/spy/ipad-agent'
 }
