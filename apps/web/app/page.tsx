@@ -23,11 +23,7 @@ export default function LoginPage() {
         return response.json();
       })
       .then((data) => {
-        if (data.user?.role === 'admin') {
-          router.push('/admin');
-        } else {
-          router.push('/dashboard-user');
-        }
+        router.push('/dashboard-user');
       })
       .catch(() => {
         localStorage.removeItem('authToken');
@@ -64,11 +60,7 @@ export default function LoginPage() {
       if (response.ok) {
         localStorage.setItem('authToken', data.token!);
         localStorage.setItem('user', JSON.stringify(data.user));
-        if (data.user?.role === 'admin') {
-          router.push('/admin');
-        } else {
-          router.push('/dashboard-user');
-        }
+        router.push('/dashboard-user');
       } else if (response.status === 502 || response.status === 503 || response.status === 504) {
         setError('Servidor temporariamente indisponível. Tenta outra vez em 1 minuto.');
       } else {

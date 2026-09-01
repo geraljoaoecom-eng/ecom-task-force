@@ -68,7 +68,7 @@ export default function ActivateAccountPage() {
       if (response.ok) {
         setSuccess(true);
         setTimeout(() => {
-          router.push('/dashboard');
+          router.push('/dashboard-user');
         }, 2000);
       } else {
         setError(data.error || 'Erro ao ativar conta');

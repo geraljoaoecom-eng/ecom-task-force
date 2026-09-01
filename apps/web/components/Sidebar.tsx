@@ -19,6 +19,7 @@ import {
   LogOut,
   LayoutDashboard,
   Menu,
+  Users,
   ScanSearch,
   ClipboardList,
   GraduationCap,
@@ -28,10 +29,17 @@ import {
 const navigation = [
   {
     name: 'Dashboard',
-    href: '/dashboard',
+    href: '/dashboard-user',
     icon: LayoutDashboard,
     current: false,
     adminOnly: false,
+  },
+  {
+    name: 'Admin',
+    href: '/admin',
+    icon: Users,
+    current: false,
+    adminOnly: true,
   },
   {
     name: 'SPY',
@@ -137,19 +145,8 @@ export function Sidebar() {
   // Verificar se alguma página do OURO está ativa
   const isOuroActive = pathname.startsWith('/ouro/')
   
-  // Ajustar navegação baseado no role
-  const adjustedNavigation = navigation
-    .map((item) => {
-      if (item.href === '/dashboard') {
-        return {
-          ...item,
-          name: isAdmin ? 'Admin' : 'Dashboard',
-          href: isAdmin ? '/admin' : '/dashboard-user',
-        }
-      }
-      return item
-    })
-    .filter((item) => !item.adminOnly || isAdmin)
+  // Filtrar itens admin-only
+  const adjustedNavigation = navigation.filter((item) => !item.adminOnly || isAdmin)
 
   return (
     <>
