@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ChevronDown, ChevronUp, List, Loader2, Pause, Play, ScanSearch, X, XCircle } from 'lucide-react';
 import { useSpyJob } from '@/context/SpyJobContext';
 import { spyApi } from '@/lib/api';
+import { SpyLiveFeed, type SpyLiveState } from '@/components/SpyLiveFeed';
 import { buildSpyFilterChips } from '@/lib/spy-session-filters';
 
 const PHASE_SHORT: Record<string, string> = {
