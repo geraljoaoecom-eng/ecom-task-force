@@ -22,6 +22,7 @@ import { SpyKeywordPreviewPanel } from '@/components/SpyKeywordPreviewPanel'
 import type { SpyMarketIntelData } from '@/components/SpyMarketIntel'
 import { spyApi } from '@/lib/api'
 import { getSpyDeviceChoice, isDesktopBridgeChoice, spyStartBlockedMessage } from '@/lib/spy-device-mode'
+import { formatDiscoveryTarget } from '@/lib/spy-session-filters'
 import { useSpyJob } from '@/context/SpyJobContext'
 import {
   SpyCountryMultiField,
@@ -54,14 +55,6 @@ const DISCOVERY_TARGET_OPTIONS = [
   { value: '50', label: 'Parar aos 50 discoveries' },
   { value: 'unlimited', label: 'Todos os resultados (sem limite)' },
 ]
-
-function formatDiscoveryTarget(stats: Record<string, unknown> | undefined) {
-  const raw = stats?.discoveryTarget ?? stats?.maxAdsLimit
-  if (raw === 'unlimited' || raw === 0 || raw == null) return 'Todos os discoveries'
-  const n = typeof raw === 'number' ? raw : parseInt(String(raw), 10)
-  if (!Number.isFinite(n)) return String(raw)
-  return `Meta: ${n} discovery${n === 1 ? '' : 's'}`
-}
 
 const LOCAL_PORT = 9780
 const LOCAL_BASE = `http://127.0.0.1:${LOCAL_PORT}`

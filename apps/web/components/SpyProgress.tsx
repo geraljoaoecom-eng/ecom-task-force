@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ChevronDown, ChevronUp, List, Loader2, Pause, Play, ScanSearch, X, XCircle } from 'lucide-react';
 import { useSpyJob } from '@/context/SpyJobContext';
 import { spyApi } from '@/lib/api';
-import { SpyLiveFeed, type SpyLiveState } from '@/components/SpyLiveFeed';
+import { buildSpyFilterChips } from '@/lib/spy-session-filters';
 
 const PHASE_SHORT: Record<string, string> = {
   deep_search: 'DeepSearch',
@@ -79,6 +79,17 @@ export function SpyProgress() {
   const keywordActive = running && ['keyword', 'meta_collect', 'meta_filter', 'meta_library'].includes(live?.phase || '');
   const keywordsDisplay = keywordActive ? keywordsDone + 1 : keywordsDone;
   const pct = keywordsQueued ? Math.min(100, Math.round((keywordsDisplay / keywordsQueued) * 100)) : completed ? 100 : 0;
+  const filterChips = primary
+    ? buildSpyFilterChips({
+        country: primary.country,
+        language: primary.language,
+        nicho: primary.nicho,
+        produto: primary.produto,
+        keywordSeed: primary.keywordSeed,
+        stats: primary.stats,
+        marketIntel: primary.marketIntel,
+      })
+    : [];
 
   // Timer de tempo decorrido
   const [elapsed, setElapsed] = useState('');
@@ -147,6 +158,11 @@ export function SpyProgress() {
           <div style={{ color: '#94a3b8', fontSize: '0.75rem', marginTop: '0.125rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {primary.name}
           </div>
+          {filterChips.length > 0 && (
+            <div style={{ color: '#64748b', fontSize: '0.6875rem', marginTop: '0.2rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {filterChips.join(' · ')}
+            </div>
+          )}
         </div>
         <button
           type="button"
@@ -180,6 +196,13 @@ export function SpyProgress() {
               background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)', borderRadius: '0.375rem', color: '#fca5a5',
             }}>
               <strong>Erro:</strong> {errorMessage}
+            </div>
+          )}
+          {filterChips.length > 0 && (
+            <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', marginBottom: '0.625rem' }}>
+              {filterChips.map((chip) => (
+                <span key={chip} style={filterChipStyle}>{chip}</span>
+              ))}
             </div>
           )}
           <div style={{ marginBottom: '0.75rem' }}>
@@ -297,6 +320,16 @@ function btnStyle(color: string): React.CSSProperties {
     cursor: 'pointer',
   };
 }
+
+const filterChipStyle: React.CSSProperties = {
+  fontSize: '0.6875rem',
+  padding: '0.2rem 0.5rem',
+  borderRadius: '0.3rem',
+  background: 'rgba(96,165,250,0.08)',
+  border: '1px solid rgba(96,165,250,0.25)',
+  color: '#93c5fd',
+  fontWeight: 500,
+};
 
 const chipStyle: React.CSSProperties = {
   fontSize: '0.6875rem',

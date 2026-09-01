@@ -23,10 +23,14 @@ export interface SpySessionLive {
   id: string;
   name: string;
   status: string;
-  stats: Record<string, number>;
+  stats: Record<string, unknown>;
   discoveriesCount?: number;
   country?: string;
+  language?: string;
   nicho?: string;
+  produto?: string;
+  keywordSeed?: string;
+  marketIntel?: Record<string, unknown> | null;
   startedAt?: string;
   errorMessage?: string;
 }
