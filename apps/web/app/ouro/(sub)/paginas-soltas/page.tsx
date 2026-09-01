@@ -4,7 +4,15 @@ import { FileText, Search, Filter, ExternalLink } from 'lucide-react'
 
 export default function PaginasSoltasPage() {
   return (
-    <div className="space-y-6">
+    <div style={{ 
+      background: '#0c0f14', 
+      color: '#E8EDF2', 
+      minHeight: '100vh',
+      padding: 'clamp(1rem, 3vw, 2rem)',
+      boxSizing: 'border-box',
+      overflow: 'hidden'
+    }}>
+      <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-text flex items-center gap-3">
@@ -25,6 +33,7 @@ export default function PaginasSoltasPage() {
         <p className="text-muted">
           Esta seção estará disponível em breve com conteúdo exclusivo.
         </p>
+      </div>
       </div>
     </div>
   )

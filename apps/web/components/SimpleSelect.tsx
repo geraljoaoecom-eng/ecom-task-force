@@ -39,7 +39,14 @@ export function SimpleSelect({
   const loadOptions = async () => {
     try {
       const data = await filterOptionsApi.getByType(type)
-      setOptions(data)
+      // Normalize data: handle both strings and objects with {value, label}
+      const normalizedOptions = (data || []).map((option: any) => {
+        if (typeof option === 'string') return option
+        if (option && typeof option === 'object' && option.value) return option.value
+        if (option && typeof option === 'object' && option.label) return option.label
+        return String(option)
+      })
+      setOptions(normalizedOptions)
     } catch (error) {
       console.error('Erro ao carregar opções:', error)
     }

@@ -1,0 +1,86 @@
+═══════════════════════════════════════════════════════
+ ECOM TASKFORCE v2.0 - GUIA DE INICIALIZAÇÃO
+═══════════════════════════════════════════════════════
+
+🎯 COMO INICIAR (Método mais confiável):
+
+PASSO 1: Abra o PowerShell ou CMD
+
+PASSO 2: Cole este comando e pressione ENTER:
+
+cd "C:\Users\Lesenechal\Desktop\Projetos\ECOM TaskForce\apps\api" && npm run dev
+
+PASSO 3: Aguarde ver esta mensagem:
+    ✅ Sistema pronto para receber requisições
+    📡 Servidor rodando em: http://localhost:4000
+
+PASSO 4: Abra OUTRO PowerShell ou CMD
+
+PASSO 5: Cole este comando e pressione ENTER:
+
+cd "C:\Users\Lesenechal\Desktop\Projetos\ECOM TaskForce\apps\web" && npm run dev
+
+PASSO 6: Aguarde ver esta mensagem:
+    ✓ Ready in Xs
+    ○ Compiling / ...
+
+PASSO 7: Abra o navegador em:
+    http://localhost:3000
+
+PASSO 8: Faça login com:
+    Email: pokt@gmail.com
+    Senha: 84005787
+
+═══════════════════════════════════════════════════════
+
+🕷️ SCRAPING AUTOMÁTICO:
+
+O sistema irá atualizar AUTOMATICAMENTE todas as bibliotecas
+6 vezes por dia nos seguintes horários:
+
+   • 08:00 - Manhã
+   • 12:00 - Meio-dia
+   • 16:00 - Tarde
+   • 20:00 - Noite
+   • 00:00 - Meia-noite
+   • 04:00 - Madrugada
+
+Você NÃO precisa fazer nada! O sistema funciona sozinho!
+
+═══════════════════════════════════════════════════════
+
+📊 VERIFICAR SE ESTÁ FUNCIONANDO:
+
+API: http://localhost:4000/api/health
+    Deve mostrar: {"status":"online","version":"2.0.0"...}
+
+Frontend: http://localhost:3000
+    Deve mostrar: Página de login
+
+═══════════════════════════════════════════════════════
+
+🛑 COMO PARAR:
+
+Feche as janelas do PowerShell/CMD onde os servidores estão rodando.
+
+Ou execute:
+    taskkill /F /IM node.exe
+
+═══════════════════════════════════════════════════════
+
+📚 DOCUMENTAÇÃO COMPLETA:
+
+- INICIO-RAPIDO.md      → Guia de 1 página
+- COMO-INICIAR.md       → Guia detalhado  
+- SCRAPING-SYSTEM.md    → Sistema de scraping
+- README-v2.md          → Documentação técnica
+- RESUMO-MELHORIAS.md   → O que foi melhorado
+
+═══════════════════════════════════════════════════════
+
+✅ SISTEMA PRONTO PARA USO!
+
+O scraping automático está ATIVO e funcionará 6x por dia!
+
+═══════════════════════════════════════════════════════
+

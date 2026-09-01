@@ -1,12 +1,13 @@
 import './globals.css'
 import type { Metadata } from 'next'
-import { Sidebar } from '@/components/Sidebar'
-import { ShortcutsHelp } from '@/components/ShortcutsHelp'
-import { ModalProvider } from '@/contexts/ModalContext'
+import { ConditionalLayout } from '@/components/ConditionalLayout'
+import ErrorReporter from '@/components/ErrorReporter'
+import { APP_NAME } from '@/lib/brand'
 
 export const metadata: Metadata = {
-  title: 'ECOM TASK FORCE',
-  description: 'Sistema de monitoramento de bibliotecas de anúncios do Facebook',
+  title: APP_NAME,
+  description: 'Monitorização de bibliotecas Meta Ads, SPY e copy bank para direct response.',
+  icons: { icon: '/logo.png', apple: '/logo.png' },
 }
 
 export default function RootLayout({
@@ -15,17 +16,20 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="pt-BR">
-      <body className="text-[15px] md:text-[16px] tracking-[0.01em]">
-        <ModalProvider>
-          <div className="flex min-h-screen bg-background">
-            <Sidebar />
-            <main className="flex-1 p-6 max-w-[1500px] mx-auto px-5 md:px-8 xl:px-10">
-              {children}
-            </main>
-          </div>
-          <ShortcutsHelp />
-        </ModalProvider>
+    <html lang="pt-BR" suppressHydrationWarning>
+      <body suppressHydrationWarning style={{
+        fontSize: '15px',
+        letterSpacing: '0.01em',
+        margin: 0,
+        padding: 0,
+        backgroundColor: '#0c0f14',
+        color: '#E8EDF2',
+        fontFamily: 'system-ui, -apple-system, sans-serif'
+      }}>
+        <ErrorReporter />
+        <ConditionalLayout>
+          {children}
+        </ConditionalLayout>
       </body>
     </html>
   )

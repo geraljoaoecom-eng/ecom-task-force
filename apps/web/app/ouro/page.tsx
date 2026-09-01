@@ -36,52 +36,131 @@ const goldFeatures = [
 
 export default function OuroPage() {
   return (
-    <div className="space-y-6">
+    <div style={{ 
+      background: '#0c0f14', 
+      color: '#E8EDF2', 
+      minHeight: '100vh',
+      padding: '2rem'
+    }}>
       {/* Header */}
-      <div className="text-center mb-12">
-        <div className="inline-flex items-center justify-center w-20 h-20 bg-gold/10 rounded-full mb-6">
-          <Crown className="h-10 w-10 text-gold" />
+      <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+        <div style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '5rem',
+          height: '5rem',
+          background: 'rgba(245, 210, 108, 0.1)',
+          borderRadius: '50%',
+          marginBottom: '1.5rem'
+        }}>
+          <Crown style={{ height: '2.5rem', width: '2.5rem', color: '#F5D26C' }} />
         </div>
-        <h1 className="text-4xl font-bold text-text mb-4">
+        <h1 style={{ 
+          fontSize: '2.5rem', 
+          fontWeight: 'bold', 
+          color: '#E8EDF2', 
+          marginBottom: '1rem' 
+        }}>
           Seção OURO
         </h1>
-        <p className="text-xl text-muted max-w-2xl mx-auto">
+        <p style={{ 
+          fontSize: '1.25rem', 
+          color: '#94a3b8', 
+          maxWidth: '32rem', 
+          margin: '0 auto' 
+        }}>
           Recursos premium para maximizar suas campanhas de e-commerce. 
           Coleções exclusivas de materiais testados e aprovados.
         </p>
       </div>
 
       {/* Features Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', 
+        gap: '2rem',
+        marginBottom: '2rem'
+      }}>
         {goldFeatures.map((feature) => (
           <Link
             key={feature.name}
             href={feature.href}
-            className="group"
+            style={{ textDecoration: 'none' }}
           >
-            <div className="card p-8 h-full transition-all duration-300 group-hover:scale-[1.02]">
-              <div className="flex items-start gap-4">
-                <div className="p-4 bg-gold/10 rounded-xl group-hover:bg-gold/20 transition-colors">
-                  <feature.icon className="h-8 w-8 text-gold" />
+            <div style={{
+              background: '#141823',
+              border: '1px solid rgba(245, 210, 108, 0.2)',
+              borderRadius: '0.75rem',
+              padding: '2rem',
+              height: '100%',
+              transition: 'all 0.3s',
+              cursor: 'pointer',
+              boxShadow: '0 6px 24px rgba(0, 0, 0, 0.35)'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = 'scale(1.02)'
+              e.currentTarget.style.borderColor = 'rgba(245, 210, 108, 0.4)'
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = 'scale(1)'
+              e.currentTarget.style.borderColor = 'rgba(245, 210, 108, 0.2)'
+            }}
+            >
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
+                <div style={{
+                  padding: '1rem',
+                  background: 'rgba(245, 210, 108, 0.1)',
+                  borderRadius: '0.75rem',
+                  transition: 'background-color 0.3s'
+                }}>
+                  <feature.icon style={{ height: '2rem', width: '2rem', color: '#F5D26C' }} />
                 </div>
                 
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-3">
-                    <h3 className="text-xl font-semibold text-text group-hover:text-gold transition-colors">
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                    <h3 style={{ 
+                      fontSize: '1.25rem', 
+                      fontWeight: '600', 
+                      color: '#E8EDF2',
+                      transition: 'color 0.3s'
+                    }}>
                       {feature.name}
                     </h3>
-                    <span className="badge">
+                    <span style={{
+                      background: 'rgba(245, 210, 108, 0.1)',
+                      color: '#F5D26C',
+                      padding: '0.25rem 0.75rem',
+                      borderRadius: '9999px',
+                      fontSize: '0.75rem',
+                      fontWeight: '500',
+                      border: '1px solid rgba(245, 210, 108, 0.2)'
+                    }}>
                       {feature.status}
                     </span>
                   </div>
                   
-                  <p className="text-muted leading-relaxed">
+                  <p style={{ 
+                    color: '#94a3b8', 
+                    lineHeight: '1.6',
+                    marginBottom: '1.5rem'
+                  }}>
                     {feature.description}
                   </p>
                   
-                  <div className="mt-6 flex items-center text-gold group-hover:gap-3 gap-2 transition-all">
-                    <span className="text-sm font-medium">Explorar</span>
-                    <Star className="h-4 w-4 group-hover:rotate-12 transition-transform" />
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    color: '#F5D26C',
+                    gap: '0.5rem',
+                    transition: 'gap 0.3s'
+                  }}>
+                    <span style={{ fontSize: '0.875rem', fontWeight: '500' }}>Explorar</span>
+                    <Star style={{ 
+                      height: '1rem', 
+                      width: '1rem',
+                      transition: 'transform 0.3s'
+                    }} />
                   </div>
                 </div>
               </div>
@@ -91,17 +170,50 @@ export default function OuroPage() {
       </div>
 
       {/* Coming Soon Banner */}
-      <div className="card p-8 text-center bg-gradient-to-r from-gold/5 to-gold/10 border-gold/30">
-        <Coins className="h-12 w-12 text-gold mx-auto mb-4" />
-        <h3 className="text-2xl font-bold text-text mb-3">
+      <div style={{
+        background: 'linear-gradient(135deg, rgba(245, 210, 108, 0.05), rgba(245, 210, 108, 0.1))',
+        border: '1px solid rgba(245, 210, 108, 0.3)',
+        borderRadius: '0.75rem',
+        padding: '2rem',
+        textAlign: 'center',
+        boxShadow: '0 6px 24px rgba(0, 0, 0, 0.35)'
+      }}>
+        <Coins style={{ 
+          height: '3rem', 
+          width: '3rem', 
+          color: '#F5D26C', 
+          margin: '0 auto 1rem' 
+        }} />
+        <h3 style={{ 
+          fontSize: '1.5rem', 
+          fontWeight: 'bold', 
+          color: '#E8EDF2', 
+          marginBottom: '0.75rem' 
+        }}>
           Mais recursos em desenvolvimento
         </h3>
-        <p className="text-muted mb-6 max-w-2xl mx-auto">
+        <p style={{ 
+          color: '#94a3b8', 
+          marginBottom: '1.5rem', 
+          maxWidth: '32rem', 
+          margin: '0 auto 1.5rem' 
+        }}>
           Estamos trabalhando em recursos avançados como análise de competição, 
           identificação de tendências e insights automáticos de performance.
         </p>
-        <div className="inline-flex items-center gap-2 badge text-base px-6 py-3">
-          <Star className="h-4 w-4" />
+        <div style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          background: 'rgba(245, 210, 108, 0.1)',
+          color: '#F5D26C',
+          padding: '0.75rem 1.5rem',
+          borderRadius: '9999px',
+          fontSize: '1rem',
+          fontWeight: '500',
+          border: '1px solid rgba(245, 210, 108, 0.2)'
+        }}>
+          <Star style={{ height: '1rem', width: '1rem' }} />
           Aguarde novidades
         </div>
       </div>

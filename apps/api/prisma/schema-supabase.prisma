@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  password  String
+  name      String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  folders   Folder[]
+  libraries Library[]
+
+  @@map("users")
+}
+
+model Folder {
+  id        String    @id @default(cuid())
+  name      String
+  userId    String
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  libraries Library[]
+
+  @@unique([name, userId])
+  @@map("folders")
+}
+
+model Library {
+  id            String      @id @default(cuid())
+  name          String
+  sourceType    String
+  sourceValue   String
+  country       String?
+  language      String?
+  notes         String?
+  tags          String?
+  activeAds     Int         @default(0)
+  lastCheckedAt DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  userId        String
+  folderId      String?
+  estrategias   String?
+  idiomas       String?
+  nichos        String?
+  paises        String?
+  produtos      String?
+  status        String?
+  tipos         String?
+  nota          String?
+  adHistory     AdHistory[]
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folder        Folder?     @relation(fields: [folderId], references: [id])
+  pages         Page[]
+
+  @@index([activeAds, updatedAt])
+  @@index([userId])
+  @@map("libraries")
+}
+
+model Page {
+  id        String  @id @default(cuid())
+  url       String
+  libraryId String
+  library   Library @relation(fields: [libraryId], references: [id], onDelete: Cascade)
+
+  @@map("pages")
+}
+
+model FilterOption {
+  id        String   @id @default(cuid())
+  type      String
+  value     String
+  createdAt DateTime @default(now())
+
+  @@unique([type, value])
+  @@index([type])
+  @@map("filter_options")
+}
+
+model AdHistory {
+  id        String   @id @default(cuid())
+  libraryId String
+  adsCount  Int
+  date      DateTime @default(now())
+  library   Library  @relation(fields: [libraryId], references: [id], onDelete: Cascade)
+
+  @@index([libraryId, date])
+  @@map("ad_history")
+}
+
+model DeletionHistory {
+  id          String   @id @default(cuid())
+  libraryName String
+  sourceType  String?
+  sourceValue String?
+  country     String?
+  language    String?
+  notes       String?
+  tags        String?
+  estrategias String?
+  idiomas     String?
+  nichos      String?
+  paises      String?
+  produtos    String?
+  status      String?
+  tipos       String?
+  nota        String?
+  deletedAt   DateTime @default(now())
+  reason      String?  // Motivo da exclusão (opcional)
+
+  @@index([deletedAt])
+  @@index([libraryName])
+  @@map("deletion_history")
+}

@@ -28,8 +28,7 @@ export function ShortcutsHelp() {
     {
       key: '?',
       shiftKey: true,
-      callback: () => setIsOpen(true),
-      description: 'Mostrar ajuda de atalhos'
+      action: () => setIsOpen(true)
     }
   ])
 

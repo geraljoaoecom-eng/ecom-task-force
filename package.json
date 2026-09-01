@@ -1,17 +1,37 @@
 {
   "name": "ecom-task-force",
+  "version": "2.0.0",
+  "description": "Sistema de monitoramento de bibliotecas de anúncios do Facebook",
   "private": true,
   "scripts": {
-    "install:all": "pnpm -r install",
-    "db:push": "pnpm --filter @etf/api prisma db push",
-    "dev": "concurrently -k \"pnpm --filter @etf/api dev\" \"pnpm --filter @etf/web dev\""
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
+    "dev:api": "cd apps/api && npm run dev",
+    "dev:web": "cd apps/web && npm run dev",
+    "start": "cd apps/api && npm start",
+    "install:all": "npm install && cd apps/web && npm install",
+    "build": "cd apps/web && npm run build",
+    "clean": "node scripts/cleanup.js",
+    "test:api": "curl http://localhost:4000/api/health"
   },
   "devDependencies": {
     "concurrently": "^9.0.0"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
+    "@supabase/supabase-js": "^2.75.0",
+    "@types/pg": "^8.15.5",
+    "axios": "^1.12.2",
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
     "express": "^4.21.2",
-    "recharts": "^3.2.0"
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.16.3",
+    "prisma": "^6.17.1",
+    "puppeteer": "^24.25.0",
+    "recharts": "^3.2.0",
+    "sqlite3": "^5.1.7",
+    "stripe": "^19.1.0",
+    "supabase": "^2.48.3"
   }
 }
