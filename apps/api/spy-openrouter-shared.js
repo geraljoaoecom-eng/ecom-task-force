@@ -1,15 +1,15 @@
-// Vertex AI — Gemini via Google Cloud (usa créditos Google Cloud €250)
-const VERTEX_PROJECT = process.env.VERTEX_PROJECT || 'project-1f0c9cb1-6e86-47fe-a34';
+// Vertex AI — Gemini via Google Cloud (fallback: gcloud auth na VPS)
+const VERTEX_PROJECT = process.env.VERTEX_PROJECT || process.env.GEMINI_PROJECT || '745707961513';
 const VERTEX_REGION  = process.env.VERTEX_REGION  || 'us-central1';
 const VERTEX_BASE    = `https://${VERTEX_REGION}-aiplatform.googleapis.com/v1/projects/${VERTEX_PROJECT}/locations/${VERTEX_REGION}/publishers/google/models`;
 
-// Alias legado
-const GEMINI_BASE        = VERTEX_BASE;
-const GEMINI_NATIVE_BASE = VERTEX_BASE;
+// Google AI Studio — chave GEMINI_API_KEY (AQ.xxx / AIza...)
+const GEMINI_NATIVE_BASE = process.env.GEMINI_API_BASE || 'https://generativelanguage.googleapis.com/v1beta/models';
+const GEMINI_BASE        = GEMINI_NATIVE_BASE;
 const OPENROUTER_BASE    = process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1';
 
-// Remove prefixo "google/" que é formato OpenRouter — Vertex AI usa só o nome do modelo
-const ANALYSIS_MODEL = (process.env.SPY_ANALYSIS_MODEL || 'gemini-2.5-flash').replace(/^google\//, '');
+// Remove prefixo "google/" que é formato OpenRouter — API nativa usa só o nome do modelo
+const ANALYSIS_MODEL = (process.env.SPY_ANALYSIS_MODEL || 'gemini-3.6-flash').replace(/^google\//, '').replace(/^models\//, '');
 const WHISPER_MODEL  = process.env.SPY_WHISPER_MODEL  || 'openai/whisper-large-v3';
 const SITE_URL       = process.env.FRONTEND_URL       || 'https://ecoomtaskforce.site';
 
@@ -35,7 +35,60 @@ function invalidateAccessToken() {
 }
 
 function getApiKey() {
-  return process.env.GEMINI_API_KEY || 'vertex-ai';
+  const key = process.env.GEMINI_API_KEY?.trim();
+  return key || null;
+}
+
+function usesGeminiApiKey() {
+  return Boolean(getApiKey());
+}
+
+function normalizeModel(model) {
+  return String(model || ANALYSIS_MODEL).replace(/^google\//, '').replace(/^models\//, '');
+}
+
+function buildGeminiBody(messages, opts = {}) {
+  const maxTok = opts.max_tokens || opts.maxTokens || 2200;
+  const temp = opts.temperature ?? 0.4;
+  const systemParts = [];
+  const contents = [];
+
+  for (const m of messages) {
+    if (m.role === 'system') {
+      systemParts.push({ text: m.content });
+    } else {
+      contents.push({
+        role: m.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: m.content }],
+      });
+    }
+  }
+
+  const body = {
+    contents,
+    generationConfig: { maxOutputTokens: maxTok, temperature: temp },
+  };
+  if (systemParts.length) body.systemInstruction = { parts: systemParts };
+  return body;
+}
+
+function extractGeminiText(data) {
+  const parts = data?.candidates?.[0]?.content?.parts || [];
+  return parts.filter((p) => !p.thought).map((p) => p.text || '').join('').trim()
+    || parts.map((p) => p.text || '').join('').trim();
+}
+
+async function fetchWith429Retry(doFetch, label) {
+  let res = await doFetch();
+  for (let attempt = 0; attempt < 3 && res.status === 429; attempt++) {
+    const errData = await res.json().catch(() => ({}));
+    const suggested = parseInt((errData?.error?.details?.find((d) => d.retryDelay)?.retryDelay || '').replace('s', '')) || 0;
+    const waitMs = Math.max(suggested * 1000, (attempt + 1) * 20000);
+    console.log(`⏳ ${label} 429 — retry ${attempt + 1}/3 em ${Math.round(waitMs / 1000)}s…`);
+    await new Promise((r) => setTimeout(r, Math.min(waitMs, 60000)));
+    res = await doFetch();
+  }
+  return res;
 }
 
 function getOpenRouterKey() {
@@ -53,7 +106,11 @@ function geminiUrl(path) {
 }
 
 function isOpenRouterConfigured() {
-  return true;
+  return usesGeminiApiKey() || Boolean(getOpenRouterKey());
+}
+
+function isGeminiConfigured() {
+  return usesGeminiApiKey();
 }
 
 function isVertexModel(model) {
@@ -110,57 +167,67 @@ async function callSpyAi(messages, opts = {}) {
 }
 
 /**
- * Chama o Gemini via Vertex AI (formato nativo).
- * Aceita mensagens no formato OpenAI e devolve o texto da resposta.
+ * Chama o Gemini via Google AI Studio (GEMINI_API_KEY).
  */
-async function callGeminiVertex(messages, opts = {}) {
-  const model   = opts.model       || ANALYSIS_MODEL;
-  const maxTok  = opts.max_tokens  || opts.maxTokens || 2200;
-  const temp    = opts.temperature ?? 0.4;
-  const timeout = opts.timeout     || 90000;
+async function callGeminiApiKey(messages, opts = {}) {
+  const key = getApiKey();
+  if (!key) throw new Error('GEMINI_API_KEY em falta');
 
-  let token = await getAccessToken();
+  const model = normalizeModel(opts.model);
+  const timeout = opts.timeout || 90000;
+  const body = buildGeminiBody(messages, opts);
 
-  // Converter mensagens OpenAI → Vertex AI
-  const systemParts = [];
-  const contents = [];
-  for (const m of messages) {
-    if (m.role === 'system') {
-      systemParts.push({ text: m.content });
-    } else {
-      contents.push({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] });
-    }
+  const doFetch = () => fetch(`${GEMINI_NATIVE_BASE}/${model}:generateContent`, {
+    method: 'POST',
+    headers: { 'x-goog-api-key': key, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(timeout),
+  });
+
+  const res = await fetchWith429Retry(doFetch, 'Gemini API');
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(`Gemini API falhou (${res.status}): ${JSON.stringify(err).slice(0, 200)}`);
   }
 
-  const body = {
-    contents,
-    generationConfig: { maxOutputTokens: maxTok, temperature: temp },
-  };
-  if (systemParts.length) body.systemInstruction = { parts: systemParts };
+  const data = await res.json();
+  return extractGeminiText(data);
+}
+
+/**
+ * Chama o Gemini — Google AI Studio se GEMINI_API_KEY existir; senão Vertex via gcloud.
+ */
+async function callGeminiVertex(messages, opts = {}) {
+  if (usesGeminiApiKey()) {
+    return callGeminiApiKey(messages, opts);
+  }
+
+  const model   = normalizeModel(opts.model);
+  const timeout = opts.timeout     || 90000;
+  let token = await getAccessToken();
+  const body = buildGeminiBody(messages, opts);
 
   const doFetch = () => fetch(`${VERTEX_BASE}/${model}:generateContent`, {
     method: 'POST',
-    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(timeout),
   });
 
   let res = await doFetch();
 
-  // 401 = token expirado/inválido → invalidar cache, buscar token fresco e tentar 1×
   if (res.status === 401) {
     invalidateAccessToken();
     token = await getAccessToken(true);
     res = await doFetch();
   }
 
-  // Retry automático em 429 com backoff — até 3 tentativas
   for (let attempt = 0; attempt < 3 && res.status === 429; attempt++) {
     const errData = await res.json().catch(() => ({}));
-    const suggested = parseInt((errData?.error?.details?.find(d => d.retryDelay)?.retryDelay || '').replace('s','')) || 0;
-    const waitMs = Math.max(suggested * 1000, (attempt + 1) * 20000); // min 20s, 40s, 60s
-    console.log(`⏳ Vertex AI 429 — retry ${attempt + 1}/3 em ${Math.round(waitMs/1000)}s…`);
-    await new Promise(r => setTimeout(r, Math.min(waitMs, 60000)));
+    const suggested = parseInt((errData?.error?.details?.find((d) => d.retryDelay)?.retryDelay || '').replace('s', '')) || 0;
+    const waitMs = Math.max(suggested * 1000, (attempt + 1) * 20000);
+    console.log(`⏳ Vertex AI 429 — retry ${attempt + 1}/3 em ${Math.round(waitMs / 1000)}s…`);
+    await new Promise((r) => setTimeout(r, Math.min(waitMs, 60000)));
     res = await doFetch();
   }
 
@@ -170,19 +237,16 @@ async function callGeminiVertex(messages, opts = {}) {
   }
 
   const data = await res.json();
-  // gemini-2.5-flash é thinking model — partes com thought:true são internas, pegar a última parte de texto
-  const parts = data.candidates?.[0]?.content?.parts || [];
-  const text = parts.filter(p => !p.thought).map(p => p.text || '').join('').trim()
-    || parts.map(p => p.text || '').join('').trim();
-  return text;
+  return extractGeminiText(data);
 }
 
 async function checkOpenRouterCredits() {
+  const provider = usesGeminiApiKey() ? 'gemini-api' : (getOpenRouterKey() ? 'openrouter' : 'vertex-ai');
   try {
-    await callGeminiVertex([{ role: 'user', content: 'ok' }], { max_tokens: 5, timeout: 12000 });
-    return { configured: true, hasCredits: true, provider: 'vertex-ai' };
+    await callSpyAi([{ role: 'user', content: 'ok' }], { max_tokens: 10, timeout: 20000 });
+    return { configured: true, hasCredits: true, provider, model: ANALYSIS_MODEL };
   } catch (err) {
-    return { configured: true, hasCredits: false, error: err.message };
+    return { configured: provider !== 'vertex-ai', hasCredits: false, provider, error: err.message };
   }
 }
 
@@ -208,10 +272,13 @@ module.exports = {
   openRouterHeaders,
   geminiUrl,
   callGeminiVertex,
+  callGeminiApiKey,
   callOpenRouterChat,
   callSpyAi,
   isVertexModel,
   isOpenRouterConfigured,
+  isGeminiConfigured,
+  usesGeminiApiKey,
   checkOpenRouterCredits,
   getMetaFilterBatchSize,
 };

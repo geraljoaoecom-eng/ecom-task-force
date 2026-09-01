@@ -2,7 +2,7 @@
 
 | Ficheiro | Conteúdo |
 |----------|----------|
-| **`CREDENCIAIS-PRODUCAO.env`** | Env completo de produção (OpenRouter, proxy, Stripe, DB, …) |
+| **`CREDENCIAIS-PRODUCAO.env`** | Env completo de produção (Gemini, OpenRouter, proxy, Stripe, DB, …) |
 | **`proxy_list.txt`** | Linha do proxy Proxy-Cheap (cópia do teu `Downloads/proxy_list.txt`) |
 
 O ficheiro principal **`CREDENCIAIS-PRODUCAO.env`** contém chaves de produção (OpenRouter, proxy SPY, Stripe, etc.).
